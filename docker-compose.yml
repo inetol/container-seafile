@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  memcached:
+    image: docker.io/library/memcached:1.6.22-alpine
+    container_name: seafile-memcached
+    restart: unless-stopped
+    entrypoint: memcached -v -m 256
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  mariadb:
+    image: docker.io/library/mariadb:11.1
+    container_name: seafile-mariadb
+    restart: unless-stopped
+    env_file:
+      - ./.mariadb.env
+    volumes:
+      - seafile-mariadb:/var/lib/mysql
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+      - NET_BIND_SERVICE
+
+  seafile:
+    image: docker.seadrive.org/seafileltd/seafile-pro-mc:10.0.10
+    container_name: seafile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:61000:80"
+    env_file:
+      - ./.seafile.env
+    volumes:
+      - /opt/seafile-data:/shared
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+      - NET_BIND_SERVICE
+    depends_on:
+      - memcached
+      - mariadb
+
+volumes:
+  seafile-mariadb:
